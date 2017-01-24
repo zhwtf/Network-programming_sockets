@@ -12,8 +12,8 @@
 #define MAXLINE     4096    /* max text line length */
 #define DAYTIME_PORT 3333
 
-
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     int     sockfd, n;
     char    recvline[MAXLINE + 1];
@@ -22,7 +22,9 @@ int main(int argc, char **argv)
     //for the use of the getaddrinfo function
     struct addrinfo hints;
     struct addrinfo *result, *rp;
-    char servname[MAXLINE];
+    socklen_t lensock;
+    int k; //to hold the getnameinfo return
+    char sername[MAXLINE]; //to store the server name
     int sfd, s, j;
     if (argc != 3) {
         printf("usage: client <IPaddress> and <portnumber>\n");
@@ -34,7 +36,7 @@ int main(int argc, char **argv)
     //memset(&hints, 0, sizeof(struct addrinfo));
     bzero(&hints, sizeof(hints));
     hints.ai_family = AF_INET; // Allow only IPv4
-    hints.ai_flags = 0; //tell the function to return the canonical name of the host
+    hints.ai_flags = AI_CANONNAME; //tell the function to return the canonical name of the host
     hints.ai_socktype = SOCK_STREAM; //TCP socket
     hints.ai_protocol = 0; //Any protocol
 
@@ -57,15 +59,19 @@ int main(int argc, char **argv)
 
       if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1){//connect successfully
           //now we can print the name and address of the server
+
           //printf("Server Name: %s\n", rp->ai_canonname);
           void *addr;
           struct sockaddr_in *ipv4 = (struct sockaddr_in *)rp->ai_addr;
           addr = &(ipv4->sin_addr); //get the numeric addrss
-          if (getnameinfo(rp->ai_addr, rp->ai_addrlen, servname, sizeof(servname), NULL, 0, NI_NUMERICSERV) == 0){
-            printf("Server Name: %s\n", servname);
+          lensock = sizeof(*ipv4);
+          k = getnameinfo(rp->ai_addr, rp->ai_addrlen, sername, sizeof(sername), NULL, 0, NI_NAMEREQD);
+          //k = getnameinfo((struct sockaddr *) &ipv4, lensock, sername, sizeof(sername), NULL, 0, NI_NAMEREQD);
+          if (k == 0){
+            printf("Server Name: %s\n", sername);
           }
           else{
-            printf("cannot map the address\n");
+            printf("cannot reverse the address\n");
           }
           //convert the ip to a string
           inet_ntop(rp->ai_family, addr, ipstr, sizeof(ipstr));

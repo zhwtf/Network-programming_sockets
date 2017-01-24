@@ -54,6 +54,10 @@ main(int argc, char **argv)
         else{
           printf("cannot map the address\n");
         }
+        //print the ip address of the client
+        //char ipstr[MAXLINE];
+        //inet_ntop(AF_INET, &cliaddr.sin_addr, ipstr, sizeof(ipstr));
+        //printf("IP Address: %s\n", ipstr);
         ticks = time(NULL);
         snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
         write(connfd, buff, strlen(buff));

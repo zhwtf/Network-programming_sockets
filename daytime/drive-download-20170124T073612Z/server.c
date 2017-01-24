@@ -25,7 +25,7 @@ main(int argc, char **argv)
     time_t ticks;
     int s;
     char hos[MAXLINE];
-    //char cli[MAXLINE];
+    char cli[MAXLINE];
 
     if (argc != 2) {
         printf("usage: server <portnumber>\n");
@@ -47,12 +47,12 @@ main(int argc, char **argv)
     for ( ; ; ) {
         len = sizeof(cliaddr);
         connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &len);
-        s = getnameinfo((struct sockaddr *) &cliaddr, len, hos, sizeof(hos), NULL, 0, NI_NUMERICSERV);
+        s = getnameinfo((struct sockaddr *) &cliaddr, len, hos, sizeof(hos), NULL, 0, NI_NAMEREQD);
         if (s == 0){
-          printf("Client Name: %s\n",hos);
+          printf("Client Name: %s\n", hos);
         }
         else{
-          printf("cannot map the address\n");
+          printf("cannot reverse the address\n");
         }
         ticks = time(NULL);
         snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));

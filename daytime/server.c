@@ -49,12 +49,17 @@ main(int argc, char **argv)
         connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &len);
         s = getnameinfo((struct sockaddr *) &cliaddr, len, hos, sizeof(hos), NULL, 0, NI_NUMERICSERV);
         if (s == 0){
+
           printf("Client Name: %s\n",hos);
         }
         else{
           printf("cannot map the address\n");
         }
         ticks = time(NULL);
+        //print the ip address of the client
+        char ipstr[MAXLINE];
+        inet_ntop(AF_INET, &cliaddr.sin_addr, ipstr, sizeof(ipstr));
+        printf("Client IP Address: %s\n", ipstr);
         snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
         write(connfd, buff, strlen(buff));
         printf("Sending response: %s", buff);

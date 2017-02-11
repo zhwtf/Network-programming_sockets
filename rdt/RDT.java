@@ -29,6 +29,7 @@ public class RDT {
 	private int dst_port;
 	private int local_port;
 
+	//why it has two buffers??
 	private RDTBuffer sndBuf;
 	private RDTBuffer rcvBuf;
 
@@ -83,12 +84,56 @@ public class RDT {
 		//****** complete
 
 		// divide data into segments
+		//calculate how many segments we need to send data[]
+		int num_s1 = size % MSS;
+		int num_s2 = size / MSS;
+		if(num_s1 != 0){
+			num_s2 = num_s2 + 1;
+		}
 
-		// put each segment into sndBuf
+		int i = 0; // the inital index of the segment
+		while(true){
+			//int i = 0;
+			// put each segment into sndBuf
+			while(i < num_s2 && ((sndBuf.next - sndBuf.base) < 3)){
+				//create the segment and put it into sndBuf
+				RDTSegment sg1;
+				sg1.seqNum = i; //set the seqNum
+				sg1.ackNum = i; //set the ackNum
+				//set the data
+				int len = 0;
+				for (int j = 0; i*MSS + j < size; j++) {
+					sg1.data[j] = data[i*MSS + j];
+					len++;
+				}
+				sg1.length = len; //set the length
+				sg1.flags = (i == num_s2-1) ? 0 : 1;
+				//set the rcvwin
+				sg1.rcvWin = (protocol == GBN) ? 1 : MAX_BUF_SIZE;
 
-		// send using udp_send()
+				sg1.checksum = sg1.computeChecksum();
+				//put the segment into sndBuf
+				sndBuf.putNext(sg1);
 
-		// schedule timeout for segment(s)
+				Utility.udp_send(sg1, socket, dst_ip, dst_port);
+
+				i++;
+				//num_s2--;
+			}
+			if(i == num_s2){
+				break;
+			}
+
+
+			// send using udp_send()
+
+
+			// schedule timeout for segment(s)
+
+		}
+
+
+
 
 		return size;
 	}
@@ -116,7 +161,7 @@ public class RDT {
 class RDTBuffer {
 	public RDTSegment[] buf;
 	public int size;
-	public int base;
+	public int base; // the front of the sliding window
 	public int next;
 	public Semaphore semMutex; // for mutual execlusion
 	public Semaphore semFull; // #of full slots
@@ -136,6 +181,8 @@ class RDTBuffer {
 
 
 	// Put a segment in the next available slot in the buffer
+	// similar to producer
+	//write to the buffer
 	public void putNext(RDTSegment seg) {
 		try {
 			semEmpty.acquire(); // wait for an empty slot
@@ -150,11 +197,23 @@ class RDTBuffer {
 	}
 
 	// return the next in-order segment
+	// similar to consumer
+	//read from the buffer
 	public RDTSegment getNext() {
-
 		// **** Complete
+		try {
+			semFULL.acquire(); // decrease the full slots
+			semMutex.acquire(); // wait for mutex
+				RDTSegment nextSeg = buf[base%size];
+				base++;
+			semMutex.release();
+			semEmpty.release(); // increase #of empty slots
+		} catch(InterruptedException e) {
+			System.out.println("Buffer getNext(): " + e);
+		}
 
-		return null;  // fix
+
+		return nextSeg;  // fix
 	}
 
 	// Put a segment in the *right* slot based on seg.seqNum
@@ -199,6 +258,19 @@ class ReceiverThread extends Thread {
 		//                if seg contains data, put the data in rcvBuf and do any necessary
 		//                             stuff (e.g, send ACK)
 		//
+		while(true){
+			byte[] buf1 = new byte[MSS];
+			DatagramPacket pkt = new DatagramPacket(buf1, MSS); //declare need arguments
+			socket.receive(pkt);
+			RDTSegment seg1 = new RDTSegment();
+			makeSegment(seg1, pkt.getData());
+			if(seg1.isValid() == true){ // if the segment is valid
+				//if seg contains ACK, process it potentailly removing segments from sndBuf
+				if(sef1.containsAck == true){
+
+				}
+			}
+		}
 	}
 
 

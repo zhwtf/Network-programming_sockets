@@ -47,17 +47,19 @@ public class RDTSegment {
 
 	public boolean containsAck() {
 		// complete
-		if (seqNum == 0 && ackNum == ) {
-
+		if (length == 0) {
+			return true;
 		}
 
-		return ;
+		return false;
 	}
 
 	public boolean containsData() {
 		// complete
-
-		return true;
+		if (length != 0){
+			return true;
+		}
+		return false;
 	}
 
 	public int computeChecksum() {

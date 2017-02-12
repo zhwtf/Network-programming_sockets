@@ -108,24 +108,24 @@ public class RDT {
 				}
 				sg1.length = len; //set the length
 				sg1.flags = (i == num_s2-1) ? 0 : 1;
-				//set the rcvwin
-				sg1.rcvWin = (protocol == GBN) ? 1 : MAX_BUF_SIZE;
-
-				sg1.checksum = sg1.computeChecksum();
+				sg1.rcvWin = (protocol == GBN) ? 1 : MAX_BUF_SIZE; //set the rcvwin
+				sg1.checksum = sg1.computeChecksum(); //set the checksum
 				//put the segment into sndBuf
 				sndBuf.putNext(sg1);
-
+				// send using udp_send()
 				Utility.udp_send(sg1, socket, dst_ip, dst_port);
 
+				//create the TimerTask first
+				//TimeoutHandler (RDTBuffer sndBuf_, RDTSegment s, DatagramSocket sock, InetAddress ip_addr, int p)
+				sg1.timeoutHandler = new TimeoutHandler(sndBuf, sg1, socket, dst_ip, dst_port);
+				// schedule timeout for segment(s)
+				timer.schedule(sg1.timeoutHandler, RTO);
 				i++;
 				//num_s2--;
 			}
 			if(i == num_s2){
 				break;
 			}
-
-
-			// send using udp_send()
 
 
 			// schedule timeout for segment(s)

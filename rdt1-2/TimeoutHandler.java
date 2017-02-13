@@ -40,9 +40,7 @@ class TimeoutHandler extends TimerTask {
 				RDT.timer.schedule(seg.timeoutHandler, RDT.RTO);
 				int j = sndBuf.next;
 				for (int i = sndBuf.base; i < j; i++) {
-					System.out.println("resending segment" + sndBuf.buf[i].seqNum);
-					Utility.udp_send(sndBuf.buf[i], socket, ip, port);
-					
+					Utility.udp_send(sndBuf.getNext(), socket, ip, port);
 				}
 				break;
 			case RDT.SR:

@@ -36,8 +36,8 @@ public class TestServer {
 	     while (true) {
 	    	 int size = rdt.receive(buf, RDT.MSS);
 	    	 for (int i=0; i<size; i++)
-	    		 System.out.println(buf[i]);
-				 System.out.println("the size is: " + size);
+	    		 System.out.print(buf[i]);
+				 System.out.print(size);
 	    	 //System.out.println("aaaaa ");
 	    	 System.out.flush();
 

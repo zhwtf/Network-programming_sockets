@@ -31,18 +31,18 @@ public class TestClient {
 	     int local_port = Integer.parseInt(args[2]);
 
 	     RDT rdt = new RDT(hostname, dst_port, local_port, 10, 10);
-	     RDT.setLossRate(0.4);
+	     RDT.setLossRate(0.0);
 
 	     byte[] buf = new byte[RDT.MSS];
-	     byte[] data = new byte[10];
-	     for (int i=0; i<10; i++)
-	    	 data[i] = 0;
-	     rdt.send(data, 10);
+	     byte[] data = new byte[20];
+	     for (int i=0; i<20; i++)
+	    	 data[i] = 2;
+	     rdt.send(data, 20);
 
 	     for (int i=0; i<10; i++)
 	    	 data[i] = 1;
 	     rdt.send(data, 10);
-
+		 /*
 	     for (int i=0; i<10; i++)
 	    	 data[i] = 2;
 	     rdt.send(data, 10);
@@ -54,7 +54,7 @@ public class TestClient {
 	     for (int i=0; i<10; i++)
 	    	 data[i] = 4;
 	     rdt.send(data, 10);
-	 
+	 **/
 
 	     System.out.println(System.currentTimeMillis() + ":Client has sent all data " );
 	     System.out.flush();

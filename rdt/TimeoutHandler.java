@@ -36,6 +36,7 @@ class TimeoutHandler extends TimerTask {
 				//resend segments in sndBuf from base to next-1
 				//and start a new TimerTask
 				//start the TimerTask for the seg
+				seg.timeoutHandler = new TimeoutHandler(sndBuf, seg, socket, ip, port);
 				RDT.timer.schedule(seg.timeoutHandler, RDT.RTO);
 				int j = sndBuf.next;
 				for (int i = sndBuf.base; i < j; i++) {

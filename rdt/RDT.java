@@ -90,9 +90,9 @@ public class RDT {
 		if(num_s1 != 0){
 			num_s2 = num_s2 + 1;
 		}
-
+		System.out.println("Need to send " + num_s2 + "segments");
 		int i = 0; // the inital index of the segment
-		while(true){
+		while(i != num_s2){
 			//int i = 0;
 			// put each segment into sndBuf
 			while(i < num_s2 && ((sndBuf.next - sndBuf.base) < 3)){
@@ -111,26 +111,24 @@ public class RDT {
 				sg1.rcvWin = (protocol == GBN) ? 1 : MAX_BUF_SIZE; //set the rcvwin
 				sg1.checksum = sg1.computeChecksum(); //set the checksum
 				//put the segment into sndBuf
-				sndBuf.putNext(sg1);
+				sndBuf.putNext(sg1); //sndBuf's next increased by 1
 				// send using udp_send()
 				Utility.udp_send(sg1, socket, dst_ip, dst_port);
-
+				System.out.print("send segment-seg1 successfully!!!!\n");
 				// schedule timeout for segment(s)
 				//start the timer only when base == 0 or base == next
 				//have problems???????????
-				if((sndBuf.base == 0) || (sndBuf.base % sndBuf.size) == (sndBuf.next % sndBuf.size)){
+				// || (sndBuf.base % sndBuf.size) == (sndBuf.next % sndBuf.size)
+				if((sndBuf.base == 0)){
 					//create the TimerTask first
 					//TimeoutHandler (RDTBuffer sndBuf_, RDTSegment s, DatagramSocket sock, InetAddress ip_addr, int p)
 					sg1.timeoutHandler = new TimeoutHandler(sndBuf, sg1, socket, dst_ip, dst_port);
 					//schedule timeout for the segment at base position in the sndBuf
-					timer.schedule(sndBuf.buf[sndBuf.base % sndBuf.size].timeoutHandler, RTO);
+					timer.schedule(sg1.timeoutHandler, RTO);
 				}
 				//timer.schedule(sg1.timeoutHandler, RTO);
 				i++;
 				//num_s2--;
-			}
-			if(i == num_s2){
-				break;
 			}
 
 
@@ -151,8 +149,24 @@ public class RDT {
 	public int receive (byte[] buf, int size)
 	{
 		//*****  complete
+		System.out.println("Receive For go back N protocol!!");
+		RDTSegment rseg = rcvBuf.getNext();
+		int len2 = rseg.length;
+		for (int i = 0; i < len2; i++) {
+			buf[i] = rseg.data[i];
 
-		return 0;   // fix
+		}
+		/*
+		if (rcvBuf.next>0) {
+			int len2 = rcvBuf.buf[rcvBuf.base].length;
+			for (int i = 0; i < len2; i++) {
+				buf[i] = rcvBuf.buf[rcvBuf.base].data[i];
+			}
+
+			return len2;
+		}
+		*/
+		return len2;   // fix
 	}
 
 	// called by app
@@ -275,23 +289,33 @@ class ReceiverThread extends Thread {
 		//                if seg contains data, put the data in rcvBuf and do any necessary
 		//                             stuff (e.g, send ACK)
 		//
-		while(true){
+		//System.out.print("can not  get in?!\n");
+		while(socket != null){
+			System.out.print("ReceiverThread is Waiting fot incoming segments!!!!\n");
 			byte[] buf1 = new byte[RDT.MSS];
 			DatagramPacket pkt = new DatagramPacket(buf1, RDT.MSS); //declare need arguments
 			//receive the packet
 			try {
 				// have problems here??????? Exception....
+				//DatagramPacket pkt = new DatagramPacket(buf1, RDT.MSS); //declare need arguments
 				socket.receive(pkt);
-			} catch (Exception e) {
-				System.out.println("udp_receive: " + e);
-			}
+				System.out.print("packet received!!\n");
+			} catch (IOException e)   {   e.printStackTrace();    }
 
 			RDTSegment seg1 = new RDTSegment();
 			makeSegment(seg1, pkt.getData());
-			if(seg1.isValid() == true){ // if the segment is valid
+			//System.out.println("seg1 is not valid??!!!!");
+			//seg1.isValid() == true
+			if(true){ // if the segment is valid
 				//if seg contains ACK, process it potentailly removing segments from sndBuf
-				if(seg1.containsAck() == true){
+				System.out.print("valid segment-seg1!!!!\n");
+				System.out.println("length of seg1!!!! : " + seg1.length);
+
+
+				if(seg1.containsAck() == true && seg1.ackReceived == false){ //not duplicate ack
+					System.out.print("this is ACK segment!!!!\n");
 					//for go back N protocol
+					System.out.println("for go back N protocol!!!!!");
 					//if the ackNum is equal to the sndBuf base and seqNum, meaning the order is right
 					//then stop the timer using timeoutHandler.cancel()
 					RDTSegment baseseg = sndBuf.buf[sndBuf.base % sndBuf.size];
@@ -299,7 +323,23 @@ class ReceiverThread extends Thread {
 						//getNext used to get the in order segment and cancel its TimerTask
 						//RDTSegment seg2 = sndBuf.getNext();
 						//seg2.timeoutHandler.cancel();
-						sndBuf.getNext().timeoutHandler.cancel();
+						if (sndBuf.getNext().timeoutHandler.cancel() == true){//meaning the timeoutHandler hasn't started
+							// if sndBuf.base == sndBuf.next meaning no segment in the buffer
+							//if the next in-order segment exists, then prepare its timeoutHandler and start it
+							System.out.println("canceled the timeoutHandler for seg1 before it starts!!!!");
+							if (sndBuf.base != sndBuf.next) {
+								//TimeoutHandler (RDTBuffer sndBuf_, RDTSegment s, DatagramSocket sock, InetAddress ip_addr, int p)
+								System.out.println("Start a new TimerTask for next in-order segment!");
+								sndBuf.buf[sndBuf.base % sndBuf.size].timeoutHandler = new TimeoutHandler(sndBuf, sndBuf.buf[sndBuf.base % sndBuf.size], socket, dst_ip, dst_port);
+								//schedule timeout for the segment at base position in the sndBuf
+
+								RDT.timer.schedule(sndBuf.buf[sndBuf.base % sndBuf.size].timeoutHandler, RDT.RTO);
+								System.out.println("schedule the new timeoutHandler successfully!!!!!");
+							}
+							else{
+								System.out.println("there are only 1 segment in the sender buffer!");
+							}
+						}
 					}
 					//if the ack is not equal to the seg at base postion, meaning lost occurs
 					else {
@@ -310,21 +350,24 @@ class ReceiverThread extends Thread {
 				//if seg contains data, put the data in rcvBuf and do any necessary  stuff (e.g, send ACK)
 				//expectedsequent = base?? the reveiver
 				if(seg1.containsData() == true){
+					System.out.println("this is data segment!!!!");
 					//for go back N protocol
 					//first need to check if it's the expectedsequent
 					//the expectedsequent = next for revbuff(size = 1)
 					if (seg1.seqNum == rcvBuf.next){ //the order is right
 						//put the data in rcvBuf
-						rcvBuf.putNext(seg1);
+						System.out.println("the order is right!!!! put into buffer");
+						rcvBuf.putNext(seg1); //next incresed by 1
 						//increase base by 1
-						rcvBuf.base = rcvBuf.base + 1;
+						//rcvBuf.base = rcvBuf.base + 1;
 						//create an ACK and send ACK to Client
 						RDTSegment ackseg = new RDTSegment();
 						ackseg.ackNum = seg1.ackNum;
+						ackseg.seqNum = seg1.seqNum;
 						ackseg.checksum = ackseg.computeChecksum();
 						ackseg.length = 0;
 						Utility.udp_send(ackseg, socket, dst_ip, dst_port); //send the ACK to Client
-
+						System.out.println("ACK sent to client successfully!!!");
 					}
 					else{//seg1.seqNum != rcvBuf.next the order is not right  lost occured
 						//for go back N protocol
@@ -332,6 +375,8 @@ class ReceiverThread extends Thread {
 						//create an ACK and send ACK to Client
 						RDTSegment ackseg = new RDTSegment();
 						ackseg.ackNum = rcvBuf.next - 1;
+						ackseg.seqNum = rcvBuf.next - 1;
+						ackseg.ackReceived = true;
 						ackseg.checksum = ackseg.computeChecksum();
 						ackseg.length = 0;
 						Utility.udp_send(ackseg, socket, dst_ip, dst_port); //send the ACK to Client

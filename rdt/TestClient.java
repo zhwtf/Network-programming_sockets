@@ -1,5 +1,6 @@
 /**
- * @author mohamed
+ * @author: hao zheng
+hza89@sfu.ca
  *
  */
 
@@ -30,31 +31,50 @@ public class TestClient {
 	     int dst_port = Integer.parseInt(args[1]);
 	     int local_port = Integer.parseInt(args[2]);
 
-	     RDT rdt = new RDT(hostname, dst_port, local_port, 10, 10);
+	     RDT rdt = new RDT(hostname, dst_port, local_port, 6, 6);
 	     RDT.setLossRate(0.4);
 
 	     byte[] buf = new byte[RDT.MSS];
-	     byte[] data = new byte[10];
-	     for (int i=0; i<10; i++)
-	    	 data[i] = 0;
-	     rdt.send(data, 10);
+	     byte[] data = new byte[45];
+		 for (int i=0; i<45; i++)
+			data[i] = 0;
+		 rdt.send(data, 45);
 
-	     for (int i=0; i<10; i++)
-	    	 data[i] = 1;
-	     rdt.send(data, 10);
+		 for (int i=0; i<45; i++)
+			data[i] = 1;
+		 rdt.send(data, 45);
 
-	     for (int i=0; i<10; i++)
-	    	 data[i] = 2;
-	     rdt.send(data, 10);
+		 for (int i=0; i<45; i++)
+			data[i] = 2;
+		 rdt.send(data, 45);
 
-	     for (int i=0; i<10; i++)
-	    	 data[i] = 3;
-	     rdt.send(data, 10);
+		 for (int i=0; i<45; i++)
+			data[i] = 3;
+		 rdt.send(data, 45);
 
-	     for (int i=0; i<10; i++)
-	    	 data[i] = 4;
-	     rdt.send(data, 10);
-	 
+		 for (int i=0; i<45; i++)
+			data[i] = 4;
+		 rdt.send(data, 45);
+
+		 for (int i=0; i<45; i++)
+ 		   data[i] = 5;
+ 		 rdt.send(data, 45);
+
+		 for (int i=0; i<45; i++)
+			data[i] = 6;
+		 rdt.send(data, 45);
+
+		for (int i=0; i<45; i++)
+			data[i] = 7;
+		rdt.send(data, 45);
+
+		for (int i=0; i<45; i++)
+			data[i] = 8;
+		rdt.send(data, 45);
+
+		for (int i=0; i<45; i++)
+			data[i] = 9;
+		rdt.send(data, 45);
 
 	     System.out.println(System.currentTimeMillis() + ":Client has sent all data " );
 	     System.out.flush();

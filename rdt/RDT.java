@@ -169,7 +169,7 @@ public class RDT {
 			//System.out.println("Receive --- SR");
 
 			//while(rcvBuf.base == 0 || rcvBuf.buf[rcvBuf.base % rcvBuf.size] != null)
-				if(rcvBuf.base%rcvBuf.size == 0 && rcvBuf.buf[rcvBuf.base % rcvBuf.size] != null){ //at start, the base is 0 and has segment
+				if(rcvBuf.base == 0 && rcvBuf.buf[rcvBuf.base % rcvBuf.size] != null){ //at start, the base is 0 and has segment
 					RDTSegment rseg = rcvBuf.getNext();
 					len2 = rseg.length;
 					for (int i = 0; i < len2; i++) {
@@ -178,7 +178,8 @@ public class RDT {
 					}
 					return len2;
 				}
-				if(rcvBuf.buf[rcvBuf.base % rcvBuf.size] != null){
+				//need to keep track of the base and the seqNum of the base(should be updated, not the previous segment)
+				if(rcvBuf.buf[rcvBuf.base % rcvBuf.size] != null && rcvBuf.buf[rcvBuf.base % rcvBuf.size].seqNum == rcvBuf.base){
 					RDTSegment rseg = rcvBuf.getNext();
 					len2 = rseg.length;
 					for (int i = 0; i < len2; i++) {
@@ -506,6 +507,7 @@ rcv_base) packets are delivered to the upper layer.
 						if(((seg1.seqNum > rcvBuf.base) && (seg1.seqNum <= (rcvBuf.base+rcvBuf.size-1))) && (rcvBuf.buf[seg1.seqNum%rcvBuf.size] == null || (rcvBuf.buf[seg1.seqNum%rcvBuf.size].seqNum != seg1.seqNum))){
 							rcvBuf.putSeqNum(seg1); //put into the revbuff
 							System.out.println("segment is put into rcvbuffer: " + seg1.seqNum);
+
 						}
 						//else if the seqNum is in [rcv_base-N, rcv_base-1] also need to send ack
 						System.out.println("sending the ack: " + seg1.seqNum);

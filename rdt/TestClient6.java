@@ -1,6 +1,7 @@
 /**
  * @author: hao zheng
-hza89@sfu.ca
+ login name: hza89
+ email: hza89@sfu.ca
  *
  */
 
@@ -10,12 +11,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class TestClient {
+public class TestClient6 {
 
 	/**
 	 *
 	 */
-	public TestClient() {
+	public TestClient6() {
 
 	}
 
@@ -33,7 +34,9 @@ public class TestClient {
 
 	     RDT rdt = new RDT(hostname, dst_port, local_port, 6, 6);
 	     RDT.setLossRate(0.4);
-
+		 RDT.setProtocol(2);
+		 RDT.setMSS(10);
+		 RDT.setRTO(500);
 	     byte[] buf = new byte[RDT.MSS];
 	     byte[] data = new byte[45];
 		 for (int i=0; i<45; i++)
@@ -83,7 +86,7 @@ public class TestClient {
 		 for (int i=0; i<size; i++)
 			 System.out.print(buf[i]);
 	     rdt.close();
-		 
+
 	     System.out.println("Client is done " );
 	}
 

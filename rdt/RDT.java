@@ -1,7 +1,8 @@
 
 /**
  * @author: hao zheng
-hza89@sfu.ca
+ login name: hza89
+ email: hza89@sfu.ca
  *
  */
 package rdt;
@@ -13,17 +14,19 @@ import java.util.concurrent.*;
 
 public class RDT {
 
-	public static final int MSS = 100; // Max segement size in bytes
-	public static final int RTO = 500; // Retransmission Timeout in msec
+
 	public static final int ERROR = -1;
 	public static final int MAX_BUF_SIZE = 3;
 	public static final int GBN = 1;   // Go back N protocol
 	public static final int SR = 2;    // Selective Repeat
-	public static final int protocol = SR;
+
 
 	public static double lossRate = 0.0;
 	public static Random random = new Random();
 	public static Timer timer = new Timer();
+	public static int MSS = 100; // Max segement size in bytes
+	public static int RTO = 500; // Retransmission Timeout in msec
+	public static  int protocol = SR;
 
 	private DatagramSocket socket;
 	private InetAddress dst_ip;
@@ -77,6 +80,11 @@ public class RDT {
 	}
 
 	public static void setLossRate(double rate) {lossRate = rate;}
+	public static void setMSS(int mss) {MSS = mss;}
+	public static void setProtocol(int protocol_) {protocol = protocol_;}
+	public static void setRTO(int rto) {RTO = rto;}
+
+
 
 	// called by app
 	// returns total number of sent bytes
@@ -115,7 +123,8 @@ public class RDT {
 				sg1.length = len; //set the length
 				sg1.flags = (i == num_s2-1) ? 0 : 1;
 				sg1.rcvWin = (protocol == GBN) ? 1 : MAX_BUF_SIZE; //set the rcvwin
-				sg1.checksum = sg1.computeChecksum(); //set the checksum
+				//need to get the 1's complement of the computeChecksum()
+				sg1.checksum = sg1.computeChecksum() ^ 0xff; //set the checksum
 				//put the segment into sndBuf
 				System.out.println("the segment " + sg1.seqNum + " is created successfully");
 
@@ -197,6 +206,7 @@ public class RDT {
 	public void close() {
 		// OPTIONAL: close the connection gracefully
 		// you can use TCP-style connection termination process
+
 	}
 
 }  // end RDT class
@@ -334,13 +344,13 @@ class ReceiverThread extends Thread {
 			makeSegment(seg1, pkt.getData());
 			//System.out.println("seg1 is not valid??!!!!");
 			//seg1.isValid() == true
-			if(true){ // if the segment is valid
+			if(seg1.isValid() == true){ // if the segment is valid
 				//if seg contains ACK, process it potentailly removing segments from sndBuf
 				System.out.println("valid segment number: " + seg1.seqNum);
 				System.out.println("length of seg: " + seg1.length);
 
 				if(RDT.protocol == RDT.GBN){
-					if(seg1.containsAck() == true && seg1.ackReceived == false){ //not duplicate ack
+					if(seg1.containsAck() == true){ //not duplicate ack
 						System.out.print("this is ACK segment!\n");
 						//for go back N protocol
 						System.out.println("for go back N protocol!");
@@ -348,7 +358,7 @@ class ReceiverThread extends Thread {
 						//then stop the timer using timeoutHandler.cancel()
 						//what if the segment timeout first then the ack arrives
 						RDTSegment baseseg = sndBuf.buf[sndBuf.base % sndBuf.size];
-						if (seg1.ackNum == baseseg.ackNum){
+						if (seg1.ackNum == baseseg.ackNum && seg1.seqNum == baseseg.seqNum){
 							//getNext used to get the in order segment and cancel its TimerTask
 							//RDTSegment seg2 = sndBuf.getNext();
 							//seg2.timeoutHandler.cancel();
@@ -375,13 +385,20 @@ class ReceiverThread extends Thread {
 								}
 							}
 						}
+
+
 						//if the ack is not equal to the seg at base postion, meaning lost occurs
 						else {
-							//do nothing??
+							//if the ack seqNum > base, meaning the order is not right, the server discarded the segment
+
 							System.out.println("The ACK's order is not right!!! So ignore it!!!");
+							//if the ack seqNum <
 						}
 
 					}
+					//if sender has buffer size 3, server has buffer size 1, and both segment and ACK can be lost
+
+
 					//if seg contains data, put the data in rcvBuf and do any necessary  stuff (e.g, send ACK)
 					//expectedsequent = base?? the reveiver
 					if(seg1.containsData() == true){
@@ -399,26 +416,33 @@ class ReceiverThread extends Thread {
 							RDTSegment ackseg = new RDTSegment();
 							ackseg.ackNum = seg1.ackNum;
 							ackseg.seqNum = seg1.seqNum;
-							ackseg.checksum = ackseg.computeChecksum();
 							ackseg.length = 0;
+							ackseg.checksum = ackseg.computeChecksum() ^ 0xff;
 							Utility.udp_send(ackseg, socket, dst_ip, dst_port); //send the ACK to Client
 							//System.out.println("ACK sent to client successfully!!!");
 						}
-						else{//seg1.seqNum != rcvBuf.next the order is not right  lost occured
+						else{//seg1.seqNum != rcvBuf.next the order is not right
+							//meaning there is an ack lost occured
 							//for go back N protocol
 							//return an ACK with the next-1 ackNum and discard the received segment
 							//create an ACK and send ACK to Client
 							RDTSegment ackseg = new RDTSegment();
-							ackseg.ackNum = rcvBuf.next - 1;
+							//ackseg.ackNum = rcvBuf.next - 1;
+							ackseg.ackNum = seg1.ackNum;
 							ackseg.seqNum = seg1.seqNum;
-							ackseg.ackReceived = true;
-							ackseg.checksum = ackseg.computeChecksum();
+							//ackseg.ackReceived = true;
 							ackseg.length = 0;
+							ackseg.checksum = ackseg.computeChecksum() ^ 0xff;
+
 							Utility.udp_send(ackseg, socket, dst_ip, dst_port); //send the ACK to Client
 						}
 
 					}
 				}
+
+
+
+
 
 				//the protocol is selective repeat
 				else{
@@ -474,13 +498,7 @@ class ReceiverThread extends Thread {
 
 				if(seg1.containsData() == true){
 					System.out.println("this is a data segment!!!!");
-					//recerver puts the segment in the correct slot
-					//then send an ack to the sender
-					/*If this packet has a sequence number equal to
-the base of the receive window (rcv_base in Figure 3.22), then this packet,
-and any previously buffered and consecutively numbered (beginning with
-rcv_base) packets are delivered to the upper layer.
-					*/
+
 					//and need to avoid same semgent put into recerver buffer twice
 					//this would cause deadlock
 					if ((seg1.seqNum == rcvBuf.base) && (rcvBuf.buf[rcvBuf.base%rcvBuf.size] == null || (rcvBuf.buf[rcvBuf.base%rcvBuf.size].seqNum != seg1.seqNum))){ //the order is right
@@ -496,7 +514,7 @@ rcv_base) packets are delivered to the upper layer.
 						RDTSegment ackseg = new RDTSegment();
 						ackseg.ackNum = seg1.ackNum;
 						ackseg.seqNum = seg1.seqNum;
-						ackseg.checksum = ackseg.computeChecksum();
+						ackseg.checksum = ackseg.computeChecksum() ^ 0xff;
 						ackseg.length = 0;
 						Utility.udp_send(ackseg, socket, dst_ip, dst_port); //send the ACK to Client
 						//System.out.println("ACK sent to client successfully!!!");
@@ -514,7 +532,7 @@ rcv_base) packets are delivered to the upper layer.
 						RDTSegment ackseg = new RDTSegment();
 						ackseg.ackNum = seg1.ackNum;
 						ackseg.seqNum = seg1.seqNum;
-						ackseg.checksum = ackseg.computeChecksum();
+						ackseg.checksum = ackseg.computeChecksum() ^ 0xff;
 						ackseg.length = 0;
 						Utility.udp_send(ackseg, socket, dst_ip, dst_port);
 

@@ -1,6 +1,7 @@
 /**
  * @author: hao zheng
-hza89@sfu.ca
+ login name: hza89
+ email: hza89@sfu.ca
  *
  */
 
@@ -93,6 +94,7 @@ public class RDTSegment {
         for (int i=0; i<length;i++)
             csum += (0xff & data[i]);
 
+		
         return (0xff & csum);
 
 	}

@@ -1,6 +1,7 @@
 /**
  * @author: hao zheng
-hza89@sfu.ca
+ login name: hza89
+ email: hza89@sfu.ca
  *
  */
 package rdt;

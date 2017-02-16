@@ -1,6 +1,7 @@
 /**
  * @author: hao zheng
-hza89@sfu.ca
+login name: hza89
+email: hza89@sfu.ca
  *
  */
 
@@ -10,9 +11,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class TestServer {
+public class TestServer5 {
 
-	public TestServer() {
+	public TestServer5() {
 
 	}
 
@@ -28,8 +29,11 @@ public class TestServer {
 	     int dst_port = Integer.parseInt(args[1]);
 	     int local_port = Integer.parseInt(args[2]);
 
-	     RDT rdt = new RDT(hostname, dst_port, local_port, 6, 6);
-	     RDT.setLossRate(0.4);
+	     RDT rdt = new RDT(hostname, dst_port, local_port, 10, 10);
+	     RDT.setLossRate(0.0);
+		 RDT.setProtocol(2);
+		 RDT.setMSS(100);
+		 RDT.setRTO(500);
 	     byte[] buf = new byte[500];
 	     System.out.println("Server is waiting to receive ... " );
 
@@ -39,7 +43,7 @@ public class TestServer {
 	    	 for (int i=0; i<size; i++)
 	    		 System.out.println(buf[i]);
 				 //System.out.println("\nthe size is: " + size);
-	    	 //System.out.println("aaaaa ");
+	    	 //System.out.println("");
 	    	 System.out.flush();
 
 	     }
